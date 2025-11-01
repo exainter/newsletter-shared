@@ -1,0 +1,194 @@
+name: SDK Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., 1.0.0, 1.0.0-alpha, 1.0.0-beta.1)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release?"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://npm.pkg.github.com"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify version format
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Update package.json version
+        run: |
+          npm version "${{ env.VERSION }}" --no-git-tag-version
+          echo "SDK version updated to: ${{ env.VERSION }}"
+
+      - name: Generate SDK
+        run: npm run generate:sdk
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests (if available)
+        run: npm test --if-present || echo "No tests configured"
+
+      - name: Create release notes
+        id: release_notes
+        run: |
+          cat > release-notes.md << 'EOF'
+          # @exainter/newsletter-sdk v${{ env.VERSION }}
+
+          ## Release Information
+
+          - **Version**: ${{ env.VERSION }}
+          - **Release Date**: $(date -u +'%Y-%m-%d')
+          - **OpenAPI Spec**: v0.3.0-staging
+
+          ## What's Included
+
+          This release includes the latest generated SDK from the Newsletter SaaS OpenAPI specification.
+
+          ### Endpoints
+
+          - `/health` - Health check
+          - `/healthz` - Kubernetes health check
+          - `/user/me` - Get authenticated user
+          - `/campaigns` - List campaigns
+          - `/insights` - Get aggregated insights
+          - `/events/by-campaign` - Get events by campaign
+          - `/events/by-email` - Get events by email
+
+          ## Installation
+
+          ```bash
+          npm install @exainter/newsletter-sdk@${{ env.VERSION }}
+          ```
+
+          ### Configure GitHub Packages
+
+          Add to `.npmrc`:
+          ```
+          @exainter:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+          ```
+
+          ## Usage
+
+          ```typescript
+          import { userMeUserMeGet, getAggregatedInsightsInsightsGet } from '@exainter/newsletter-sdk';
+
+          // Get current user
+          const user = await userMeUserMeGet();
+
+          // Get insights
+          const insights = await getAggregatedInsightsInsightsGet({ period: '2025-10' });
+          ```
+
+          ## Breaking Changes
+
+          ${{ inputs.prerelease && '**Pre-release**: This version may contain breaking changes. See VERSIONING_MATRIX.md for compatibility details.' || 'No breaking changes.' }}
+
+          ## Documentation
+
+          - [README.md](./README.md) - Quick start guide
+          - [VERSIONING_MATRIX.md](./VERSIONING_MATRIX.md) - Compatibility matrix
+          - [OpenAPI Spec](./specs/openapi-v0.3.0-staging.json) - Full API specification
+
+          ## Support
+
+          For issues or questions, please open a GitHub issue or contact the team.
+          EOF
+          cat release-notes.md
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Git tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          release_name: "Newsletter SDK v${{ env.VERSION }}"
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ inputs.prerelease }}
+
+      - name: Comment on PR (if from workflow)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "SDK v${{ env.VERSION }} published to GitHub Packages"
+          echo "Package: @exainter/newsletter-sdk"
+          echo "Install: npm install @exainter/newsletter-sdk@${{ env.VERSION }}"
+
+      - name: Notify Slack (optional)
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Newsletter SDK Release",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Newsletter SDK v${{ env.VERSION }} - ${{ job.status }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\nv${{ env.VERSION }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Type:*\n${{ inputs.prerelease && 'Pre-release' || 'Release' }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

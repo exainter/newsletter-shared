@@ -1,0 +1,634 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Newsletter SaaS API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "description": "Health check endpoint (no authentication required).",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Healthz",
+        "description": "Kubernetes-style health check endpoint (no authentication required).\nSuitable for AWS API Gateway health checks and load balancer integration.\n\nReturns:\n    {\n        \"status\": \"healthy\",\n        \"environment\": \"staging\",\n        \"version\": \"1.0.0\",\n        \"timestamp\": \"2025-10-30T12:00:00Z\"\n    }",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "User Me",
+        "description": "Get current authenticated user's information.\n\nRequires: JWT token with tenant_id claim (via Authorization header or API Gateway authorizer)\n\nReturns:\n    {\n        \"email\": \"user@example.com\",\n        \"tenant_id\": \"tenant-123\",\n        \"claims\": {...}\n    }",
+        "operationId": "user_me_user_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/by-campaign": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "By Campaign",
+        "operationId": "by_campaign_events_by_campaign_get",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Campaign Id"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Until"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/by-email": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "By Email",
+        "operationId": "by_email_events_by_email_get",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Email"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Until"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/campaigns": {
+      "get": {
+        "tags": [
+          "campaigns"
+        ],
+        "summary": "List Campaigns",
+        "description": "Dev: escanea campaign_agg, agrupa por campaign_id del PK=tenant#...#campaign#<id>\nEn prod: conviene una tabla espec\u00edfica o un \u00edndice para listar campa\u00f1as.",
+        "operationId": "list_campaigns_campaigns_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/insights": {
+      "get": {
+        "tags": [
+          "insights"
+        ],
+        "summary": "Get Aggregated Insights",
+        "description": "Get aggregated campaign metrics for the authenticated tenant.\n\nThis endpoint scans the campaign_agg table and aggregates metrics by campaign_id.\nIt returns summary statistics and per-campaign breakdowns.",
+        "operationId": "get_aggregated_insights_insights_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Optional period filter (e.g., '2025-10')",
+              "title": "Period"
+            },
+            "description": "Optional period filter (e.g., '2025-10')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AggregatedInsightsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AggregatedInsightsResponse": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period"
+          },
+          "campaigns": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignMetrics"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AggregatedSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "campaigns",
+          "summary"
+        ],
+        "title": "AggregatedInsightsResponse",
+        "description": "Response for GET /insights endpoint"
+      },
+      "AggregatedSummary": {
+        "properties": {
+          "total_sent": {
+            "type": "integer",
+            "title": "Total Sent",
+            "default": 0
+          },
+          "total_open_rate": {
+            "type": "number",
+            "title": "Total Open Rate",
+            "default": 0.0
+          },
+          "total_click_rate": {
+            "type": "number",
+            "title": "Total Click Rate",
+            "default": 0.0
+          },
+          "total_bounce_rate": {
+            "type": "number",
+            "title": "Total Bounce Rate",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "AggregatedSummary",
+        "description": "Summary metrics across all campaigns"
+      },
+      "CampaignMetrics": {
+        "properties": {
+          "campaign_id": {
+            "type": "string",
+            "title": "Campaign Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sent": {
+            "type": "integer",
+            "title": "Sent",
+            "default": 0
+          },
+          "opened": {
+            "type": "integer",
+            "title": "Opened",
+            "default": 0
+          },
+          "clicked": {
+            "type": "integer",
+            "title": "Clicked",
+            "default": 0
+          },
+          "bounced": {
+            "type": "integer",
+            "title": "Bounced",
+            "default": 0
+          },
+          "unsubscribed": {
+            "type": "integer",
+            "title": "Unsubscribed",
+            "default": 0
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaign_id"
+        ],
+        "title": "CampaignMetrics",
+        "description": "Metrics for a single campaign"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InsightsResponse": {
+        "properties": {
+          "interval": {
+            "type": "string",
+            "enum": [
+              "day",
+              "hour"
+            ],
+            "title": "Interval"
+          },
+          "series": {
+            "type": "object",
+            "title": "Series"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/Summary"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "interval",
+          "summary"
+        ],
+        "title": "InsightsResponse"
+      },
+      "Summary": {
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/SummaryTotals"
+          },
+          "rates": {
+            "$ref": "#/components/schemas/SummaryRates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totals",
+          "rates"
+        ],
+        "title": "Summary"
+      },
+      "SummaryRates": {
+        "properties": {
+          "open_rate": {
+            "type": "number",
+            "title": "Open Rate",
+            "default": 0.0
+          },
+          "click_rate": {
+            "type": "number",
+            "title": "Click Rate",
+            "default": 0.0
+          },
+          "bounce_rate": {
+            "type": "number",
+            "title": "Bounce Rate",
+            "default": 0.0
+          },
+          "complaint_rate": {
+            "type": "number",
+            "title": "Complaint Rate",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "SummaryRates"
+      },
+      "SummaryTotals": {
+        "properties": {
+          "delivered": {
+            "type": "integer",
+            "title": "Delivered",
+            "default": 0
+          },
+          "opens": {
+            "type": "integer",
+            "title": "Opens",
+            "default": 0
+          },
+          "clicks": {
+            "type": "integer",
+            "title": "Clicks",
+            "default": 0
+          },
+          "bounces": {
+            "type": "integer",
+            "title": "Bounces",
+            "default": 0
+          },
+          "complaints": {
+            "type": "integer",
+            "title": "Complaints",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "SummaryTotals"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

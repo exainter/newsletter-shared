@@ -6,8 +6,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "clean": "rm -rf dist"
+    "build": "npm run generate:sdk && tsc -p tsconfig.json",
+    "generate:sdk": "orval --config orval.config.js",
+    "clean": "rm -rf dist src/sdk"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "orval": "^6.17.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  }
 }

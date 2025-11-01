@@ -1,4 +1,7 @@
 // Punto de entrada del paquete compartido.
-// Aquí exportarás tipos, utilidades y el SDK (en src/sdk/*) cuando esté listo.
+// Exporta tipos, utilidades y el SDK generado desde OpenAPI.
 
 export const version = "0.0.0-dev";
+
+// SDK exports
+export * from "./sdk/client";
