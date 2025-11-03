@@ -1,11 +1,11 @@
 module.exports = {
   api: {
-    input: './specs/openapi-v0.3.0-staging.json',
+    input: './specs/openapi-v1.0.0-prod.json',
     output: {
       target: './src/sdk/client.ts',
       client: 'fetch',
       httpClient: 'fetch',
-      clean: true,
+      clean: false,
       mode: 'single',
       override: {
         fetch: {

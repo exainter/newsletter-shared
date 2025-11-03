@@ -156,9 +156,9 @@ Suitable for AWS API Gateway health checks and load balancer integration.
 Returns:
     {
         "status": "healthy",
-        "environment": "staging",
+        "environment": "prod",
         "version": "1.0.0",
-        "timestamp": "2025-10-30T12:00:00Z"
+        "timestamp": "2025-11-03T00:00:00Z"
     }
  * @summary Healthz
  */
@@ -292,8 +292,7 @@ export const byEmailEventsByEmailGet = async (
 };
 
 /**
- * Dev: escanea campaign_agg, agrupa por campaign_id del PK=tenant#...#campaign#<id>
-En prod: conviene una tabla específica o un índice para listar campañas.
+ * List campaigns for the authenticated tenant.
  * @summary List Campaigns
  */
 export type listCampaignsCampaignsGetResponse = {

@@ -1,6 +1,6 @@
 {
   "name": "@exainter/newsletter-shared",
-  "version": "0.0.0-dev",
+  "version": "1.0.0-prod",
   "private": true,
   "description": "SDK y utilidades compartidas para Newsletter SaaS",
   "main": "dist/index.js",
